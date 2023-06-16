@@ -108,7 +108,7 @@ runs:
       id: plan
       shell: bash
       run: |
-        cd ./terragrunt/${{ inputs.environment }}/${{ inputs.region-friendly }}/glue
+        cd ./terragrunt/${{ inputs.environment }}/${{ inputs.region-friendly }}/msk_connector
         terraform init
         terragrunt plan -out plan
         terragrunt show plan -no-color > ${{ github.workspace }}/plan.txt
