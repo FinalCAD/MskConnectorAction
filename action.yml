@@ -71,7 +71,7 @@ runs:
       if: inputs.terragrunt-version != 'disabled'
       with:
         terragrunt_version: ${{ inputs.terragrunt-version }}
-        token: ${{ inputs.gitub-token }}
+        token: ${{ inputs.github-token }}
     # Copy glue configuration file
     - name: Glues files copy
       shell: bash
