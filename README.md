@@ -23,7 +23,7 @@ Repository containing terraform code for glue creation, Default: FinalCAD/terraf
 ### `terraform-data-one-ref`
 Reference to use for `terraform-data-one-repo` repository, Default: master
 
-### `gitub-token`
+### `github-token`
 Github token to avoid limit rate when pulling package
 
 ### `github-ssh`
