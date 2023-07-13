@@ -19,7 +19,7 @@ inputs:
   terraform-data-one-ref:
     descrition: 'Ref to use for pulling repo terraform-data-one'
     default: 'master'
-  gitub-token:
+  github-token:
     description: 'Github token to pull package to avoid limit rate'
     default: ''
   github-ssh:

@@ -50,5 +50,5 @@ Action launch from a pull_request, only excute plan, default ''.
       github-ssh: ${{ secrets.GH_DEPLOY_SSH }}
       environment: sandbox
       aws-role: ${{ secrets.DEPLOY_ROLE_MASTER }}
-      gitub-token: ${{ secrets.GH_PACKAGES_READ }}
+      github-token: ${{ secrets.GH_PACKAGES_READ }}
 ```
