@@ -45,7 +45,7 @@ Action launch from a pull_request, only excute plan, default ''.
 
 ```yaml
   - name: Deploy msk connector job sandbox
-    uses: FinalCAD/MskConnectorAction@v1.0
+    uses: FinalCAD/MskConnectorAction@v2
     with:
       github-ssh: ${{ secrets.GH_DEPLOY_SSH }}
       environment: sandbox
