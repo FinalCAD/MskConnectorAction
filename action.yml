@@ -61,16 +61,16 @@ runs:
           ssh-add ~/.ssh/id_rsa
     # Setup terraform
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
+      uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ${{ inputs.terraform-version }}
         terraform_wrapper: false
     # Setup terragrunt
     - name: Terragrunt Binary Installer Action
-      uses: autero1/action-terragrunt@v1.3.0
+      uses: autero1/action-terragrunt@v3
       if: inputs.terragrunt-version != 'disabled'
       with:
-        terragrunt_version: ${{ inputs.terragrunt-version }}
+        terragrunt-version: ${{ inputs.terragrunt-version }}
         token: ${{ inputs.github-token }}
     # Copy glue configuration file
     - name: Glues files copy
