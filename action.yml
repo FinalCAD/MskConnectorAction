@@ -9,10 +9,10 @@ inputs:
     required: true
   terraform-version:
     description: 'Terraform version to install.'
-    default: 'latest'
+    default: '1.9.7'
   terragrunt-version:
     description: 'Terragrunt version to install.'
-    default: 'latest'
+    default: '0.68.1'
   terraform-data-one-repo:
     description: 'terraform data one repository'
     default: 'FinalCAD/terraform-data-one'
