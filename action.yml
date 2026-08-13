@@ -13,11 +13,11 @@ inputs:
   terragrunt-version:
     description: 'Terragrunt version to install.'
     default: '0.68.1'
-  terraform-data-one-repo:
+  terraform-data-one-git-url:
     description: 'terraform data one repository'
-    default: 'FinalCAD/terraform-data-one'
+    default: 'git@gitlab.com:orisha-group/construction/advae/finalcad-one/infrastructure/terraform-data-one.git'
   terraform-data-one-ref:
-    descrition: 'Ref to use for pulling repo terraform-data-one'
+    description: 'Ref to use for pulling repo terraform-data-one'
     default: 'master'
   github-token:
     description: 'Github token to pull package to avoid limit rate'
@@ -26,7 +26,7 @@ inputs:
     description: 'Github ssh key to pull terragrunt from github api'
     required: true
   environment:
-    description: 'Finalcad envrionment: production, staging, sandbox'
+    description: 'Finalcad environment: production, staging, sandbox'
     required: true
   region-friendly:
     description: 'Finalcad region: frankfurt or tokyo'
@@ -35,74 +35,75 @@ inputs:
     description: 'Sub path for config file'
     default: 'configuration'
   pr-number:
-    description: 'Pull rerquest number, empty for push'
+    description: 'Pull request number, empty for push'
     default: ''
 runs:
   using: 'composite'
   steps:
-    - uses: actions/checkout@v3
+    - name: Setup SSH agent
+      uses: webfactory/ssh-agent@v0.10.0
       with:
-        path: 'data'
-    - uses: actions/checkout@v3
-      with:
-        ssh-key: ${{ inputs.github-ssh }}
-        repository: ${{ inputs.terraform-data-one-repo }}
-        ref: ${{ inputs.terraform-data-one-ref }}
-        path: 'terragrunt'
-    # Setup ssh key
-    - name: Add ssh key
+        ssh-private-key: ${{ inputs.github-ssh }}
+    - name: Setup SSH known hosts
       shell: bash
       run: |
-          mkdir -p ~/.ssh
-          echo "${{ inputs.github-ssh }}" > ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
-          eval $(ssh-agent)
-          ssh-add ~/.ssh/id_rsa
-    # Setup terraform
+        echo '::group::Setup SSH known hosts'
+        [[ -d ~/.ssh ]] || mkdir -p ~/.ssh
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+        ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+        echo '::endgroup::'
+    - name: Checkout data repository
+      uses: actions/checkout@v7
+      with:
+        path: 'data'
+    - name: Checkout terragrunt repository
+      shell: bash
+      run: |
+        echo '::group::Checkout terragrunt repository'
+        git clone \
+          --progress \
+          --branch '${{ inputs.terraform-data-one-ref }}' \
+          --depth 1 \
+          --no-tags \
+          '${{ inputs.terraform-data-one-git-url }}' \
+          'terragrunt'
+        echo '::endgroup::'
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
+      uses: hashicorp/setup-terraform@v4
       with:
         terraform_version: ${{ inputs.terraform-version }}
         terraform_wrapper: false
-    # Setup terragrunt
     - name: Terragrunt Binary Installer Action
       uses: autero1/action-terragrunt@v3
       if: inputs.terragrunt-version != 'disabled'
       with:
         terragrunt-version: ${{ inputs.terragrunt-version }}
         token: ${{ inputs.github-token }}
-    # Copy glue configuration file
     - name: Glues files copy
       shell: bash
       run: |
         set -e
         cp ./data/${{ inputs.config-file-prefix }}/${{ inputs.environment }}/msk-connetors.yaml ./terragrunt/msk-connetors.yaml
-    # Configure aws credentials
     - name: Configure AWS credentials for security
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v6
       with:
         aws-region: ${{ inputs.aws-region }}
         role-to-assume: ${{ inputs.aws-role }}
         role-session-name: OIDCSession
-    # Setup go
     - name: Setup go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v7
       with:
         token: ${{ inputs.github-token }}
         go-version: 1.18
-    # Setup yq & cue
     - name: Setup cue
       shell: bash
       run: |
         go install cuelang.org/go/cmd/cue@v0.4.3
-    # Cue vetting
     - name: Cue vetting
       shell: bash
       run: |
         set -e
         cue vet ./terragrunt/msk-connetors.cue ./terragrunt/msk-connetors.yaml
-    #Plan terragrunt
     - name: Terragrunt plan
       if: inputs.pr-number != ''
       id: plan
@@ -113,8 +114,8 @@ runs:
         terragrunt plan -out plan
         terragrunt show plan -no-color > ${{ github.workspace }}/plan.txt
       continue-on-error: true
-    # Comment on pr
-    - uses: actions/github-script@v6
+    - name: Comment on PR
+      uses: actions/github-script@v9
       if: inputs.pr-number != ''
       env:
         PLAN: ${{ steps.plan.outputs.show }}
@@ -135,10 +136,15 @@ runs:
             repo: context.repo.repo,
             body: output
           })
-    #Apply terragrunt
     - name: Terragrunt apply
       if: inputs.pr-number == ''
       shell: bash
       run: |
         cd ./terragrunt/${{ inputs.environment }}/${{ inputs.region-friendly }}/msk_connector
         terragrunt apply -auto-approve
+    - name: Clear local repositories
+      shell: bash
+      run: |
+        echo '::group::Clear local repositories'
+        rm -rf './terragrunt'
+        echo '::endgroup::'
