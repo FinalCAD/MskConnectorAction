@@ -18,7 +18,7 @@ inputs:
     default: 'git@gitlab.com:orisha-group/construction/advae/finalcad-one/infrastructure/terraform-data-one.git'
   terraform-data-one-ref:
     description: 'Ref to use for pulling repo terraform-data-one'
-    default: 'master'
+    default: ''
   github-token:
     description: 'Github token to pull package to avoid limit rate'
     default: ''
@@ -60,13 +60,17 @@ runs:
       shell: bash
       run: |
         echo '::group::Checkout terragrunt repository'
-        git clone \
-          --progress \
-          --branch '${{ inputs.terraform-data-one-ref }}' \
+        clone_args=(
+          --progress
+        )
+        [[ -z '${{ inputs.terraform-data-one-ref }}' ]] || clone_args+=(--branch '${{ inputs.terraform-data-one-ref }}')
+        clone_args+=(
           --depth 1 \
           --no-tags \
           '${{ inputs.terraform-data-one-git-url }}' \
           'terragrunt'
+        )
+        git clone "${clone_args[@]}"
         echo '::endgroup::'
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v4
